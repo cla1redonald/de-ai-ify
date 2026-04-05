@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* =========================================================
+   De-ai-ify — Design tokens (Tailwind v4 CSS-based config)
+   ========================================================= */
+
+@theme inline {
+  /* Background */
+  --color-bg-base: #0E0E0E;
+  --color-bg-surface: #1A1A1A;
+  --color-bg-raised: #242424;
+  --color-border-subtle: #2E2E2E;
+
+  /* Text */
+  --color-text-primary: #F0EDE8;
+  --color-text-secondary: #8A8480;
+  --color-text-tertiary: #5A5754;
+  --color-text-mono: #C5C0BA;
+
+  /* Accent */
+  --color-accent: #E8C547;
+  --color-accent-hover: #D4B03E;
+
+  /* Score tiers */
+  --color-score-green: #3DBA74;
+  --color-score-amber: #E8923A;
+  --color-score-red: #E84E3A;
+
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+/* =========================================================
+   Base styles
+   ========================================================= */
+
+body {
+  background-color: #0E0E0E;
+  color: #F0EDE8;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editorial text selection */
+::selection {
+  background-color: rgba(232, 197, 71, 0.3);
+  color: #F0EDE8;
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1A1A1A; }
+::-webkit-scrollbar-thumb { background: #2E2E2E; border-radius: 3px; }
+
+/* Focus ring — accent colour, visible but not garish */
+:focus-visible {
+  outline: 2px solid #E8C547;
+  outline-offset: 2px;
+}
