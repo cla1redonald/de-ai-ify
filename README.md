@@ -2,121 +2,117 @@
 
 **No more mush.**
 
-Paste a URL or a block of text and get a score for how much it reads like AI-generated prose. Five pattern categories, instant client-side analysis, no API calls for scoring. When the text is bad enough to fix, Claude rewrites it.
+Score any text for AI writing patterns — overused clichés, hedging language, robotic structure, flat rhythm, repetitive vocabulary. Not an authorship detector. A quality scorer.
+
+Paste a URL or text, get an instant score (0–100), see exactly which patterns fired, and optionally rewrite the flagged sections with Claude.
 
 ---
 
 ## How it works
 
-### Scoring
+### Scoring engine
 
-Scoring runs entirely in the browser — no network requests, no latency.
+Scoring is **100% client-side** — pure TypeScript, no API calls, no latency, no cost. The engine analyses text across **11 categories** in two layers:
 
-The engine scans text across five categories:
+#### Pattern matching (6 categories, 68% weight)
 
 | Category | What it catches |
 |---|---|
-| **Transitional Phrases** | moreover, furthermore, in conclusion, first and foremost, last but not least... |
-| **AI Clichés** | delve into, navigate the complexities, game-changer, paradigm shift, harness the power of... |
-| **Hedging Language** | it's important to note, it's worth mentioning, one might argue, plays a crucial role... |
-| **Corporate Buzzwords** | utilize, leverage, facilitate, synergize, streamline, actionable insights... |
-| **Robotic Structure** | rhetorical questions answered immediately, formulaic three-point lists, templated paragraph openings... |
+| **Transitional Phrases** | moreover, furthermore, in conclusion, by extension... |
+| **AI Clichés** | delve into, navigate the complexities, paradigm shift, at its core, shaping the future... |
+| **Hedging Language** | it's important to note, one might argue, cannot be overstated, challenges and opportunities... |
+| **Corporate Buzzwords** | leverage, synergize, streamline, actionable insights, thought leadership... |
+| **Robotic Structure** | rhetorical Q&A, formulaic three-point lists, "while X, it also Y" balanced viewpoints, emoji bullets... |
+| **Connective Tissue** | "This means...", "This ensures...", "These factors..." — AI's primary glue between ideas |
 
-Each category is scored using a sigmoid density curve — matches per hundred words mapped against a baseline for normal prose. This prevents short texts from being penalised unfairly for a single match. Categories carry different weights; the final score is a weighted sum, 0–100.
+Buzzwords have **context-aware matching** — "leverage a crowbar" won't score, but "leverage synergies" will. Five high-false-positive terms (leverage, ecosystem, bandwidth, alignment, robust) check the surrounding sentence for legitimate technical/physical usage before counting.
 
-**Score tiers:**
+#### Statistical analysis (5 categories, 32% weight)
 
-- **0–30** — Human
-- **31–69** — Mixed
-- **70–100** — Slop
+| Category | Signal | How it works |
+|---|---|---|
+| **Sentence Rhythm** | Uniform sentence lengths | Coefficient of variation of word counts per sentence. Humans mix 4-word punches with 30-word run-ons. AI stays eerily uniform. |
+| **Vocabulary Richness** | Word reuse | Moving-Average Type-Token Ratio across 50-word sliding windows. AI cycles through the same vocabulary. |
+| **Paragraph Burstiness** | Flat information density | CV of paragraph lengths. Humans write in bursts (dense paragraph → short quip → long narrative). AI maintains flat register. |
+| **Paragraph Openings** | Repetitive starts | Shannon entropy of syntactic-bucket classification (pronoun/article/transition/gerund/other). Low entropy = repetitive = AI tell. |
+| **Punctuation Diversity** | No semicolons, dashes, or parentheticals | Ratio of "rich" punctuation to total. AI almost exclusively uses periods and commas. |
+
+Each category score is normalised using a **sigmoid density curve** — matches per hundred words mapped against a baseline for normal prose. This prevents short texts from being penalised unfairly for a single match. The final score is a weighted sum, 0–100.
+
+### Score tiers
+
+| Score | Grade | Meaning |
+|---|---|---|
+| 0–30 | **Human** | Reads like a person wrote it |
+| 31–69 | **Mixed** | Some AI patterns showing through |
+| 70–100 | **Slop** | Textbook AI-generated prose |
 
 ### Rewrites
 
-Flagged text can be rewritten by Claude (claude-sonnet-4). The model is instructed to remove AI patterns while preserving meaning, register, and length. Rewrites are rate-limited to **3 per day** per IP address on the free tier, enforced server-side.
+Flagged text can be rewritten by Claude. The model removes AI patterns while preserving meaning, register, and length. Rate-limited to 3/day per IP (server-side enforced, client-side localStorage display).
 
 ### URL scraping
 
-Paste a URL instead of text and the scrape endpoint fetches the article content via Firecrawl, then scores it.
+Paste a URL instead of text. Firecrawl fetches the article content, strips markdown, and feeds it to the scoring engine.
 
 ---
 
 ## Getting started
 
-### Prerequisites
-
-- Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com/) (rewrites only)
-- A [Firecrawl API key](https://firecrawl.dev/) (URL scraping only)
-
-Scoring works without either key. You only need them if you want rewrites and URL scraping.
-
-### Install
-
 ```bash
-git clone https://github.com/your-org/de-ai-ify.git
+git clone https://github.com/cla1redonald/de-ai-ify.git
 cd de-ai-ify
 npm install
 ```
 
 ### Environment variables
 
-Create a `.env.local` file in the project root:
+Create `.env.local`:
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-FIRECRAWL_API_KEY=fc-...
+ANTHROPIC_API_KEY=sk-ant-...    # rewrites only
+FIRECRAWL_API_KEY=fc-...        # URL scraping only
 ```
 
-Both are optional for local development if you only want to test scoring.
+Both are optional. Scoring works without either key.
 
----
-
-## Development
+### Development
 
 ```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Tests
-
-```bash
-npm test
-```
-
-163 tests covering the scoring engine, pattern matching, and sample texts. Uses Vitest.
-
-To run in watch mode:
-
-```bash
+npm run dev       # http://localhost:3000
+npm test          # 188 tests (Vitest)
 npm run test:watch
 ```
 
----
-
-## Deployment
-
-The app deploys to Vercel with zero configuration.
+### Deploy
 
 ```bash
 npx vercel --prod
 ```
 
-Add `ANTHROPIC_API_KEY` and `FIRECRAWL_API_KEY` to your Vercel project environment variables. Scoring works without them; rewrites and URL scraping will return errors until they are set.
+Add `ANTHROPIC_API_KEY` and `FIRECRAWL_API_KEY` to Vercel environment variables.
 
 ---
+
+## Architecture
+
+```
+Text Input → calculateScore()
+  ├─ Pattern Analysis (6 categories, phrase/regex/word-boundary matching)
+  │  └─ Context-aware filtering (exclude legitimate technical usage)
+  ├─ Statistical Analysis (5 categories, CV/entropy/TTR)
+  ├��� Sigmoid density normalisation per category
+  ├─ Weighted sum → score 0–100
+  └─ Verdict copy generation (references top pattern + statistical findings)
+```
+
+- **Scoring**: client-side TypeScript, zero API cost, ~5ms per analysis
+- **Rewrites**: server-side Claude API call, rate-limited
+- **Scraping**: server-side Firecrawl with 15s timeout + graceful fallback
 
 ## Stack
 
-- **Next.js 16** (App Router)
-- **TypeScript**
-- **Tailwind CSS v4**
-- **Vitest** — test runner
-- **Anthropic SDK** — rewrites via Claude
-- **Firecrawl** — URL content extraction
-
----
+Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Vitest · Anthropic SDK · Firecrawl
 
 ## License
 
