@@ -18,6 +18,7 @@ export interface CategoryResult {
   matches: PatternMatch[];
   density: number;         // 0–1 normalised density score for this category
   severity: "low" | "medium" | "high";  // derived from density
+  detail?: string;         // human-readable explanation (statistical categories)
 }
 
 export interface SlopScore {
@@ -42,6 +43,7 @@ export interface PatternResult {
   count: number;
   severity: "low" | "medium" | "high";
   instances: string[];   // flagged phrases with ~15 words of surrounding context
+  detail?: string;       // human-readable explanation (statistical categories)
 }
 
 export interface ScoreResult {

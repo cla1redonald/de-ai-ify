@@ -47,9 +47,9 @@ export default function PatternRow({ pattern, defaultOpen = false }: PatternRowP
           {pattern.category}
         </span>
 
-        {/* Count pill */}
+        {/* Count pill — show count for pattern categories, severity label for statistical */}
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${severityColor[pattern.severity]}`}>
-          {pattern.count}
+          {pattern.count > 0 ? pattern.count : pattern.severity}
         </span>
 
         {/* Chevron */}
@@ -69,6 +69,11 @@ export default function PatternRow({ pattern, defaultOpen = false }: PatternRowP
       >
         <div className="px-3 pb-3 pt-0">
           <div className="bg-bg-surface rounded p-3 space-y-1.5">
+            {pattern.detail && (
+              <p className="text-xs leading-relaxed text-text-secondary">
+                {pattern.detail}
+              </p>
+            )}
             {pattern.instances.map((instance, i) => (
               <p
                 key={i}

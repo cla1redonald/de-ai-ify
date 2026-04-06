@@ -6,7 +6,7 @@ interface PatternBreakdownProps {
 }
 
 export default function PatternBreakdown({ patterns }: PatternBreakdownProps) {
-  const visible = patterns.filter((p) => p.count > 0);
+  const visible = patterns.filter((p) => p.count > 0 || p.detail);
   if (visible.length === 0) return null;
 
   return (

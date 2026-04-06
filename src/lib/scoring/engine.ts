@@ -4,6 +4,7 @@
 import type { SlopScore, CategoryResult, PatternMatch, HighlightSpan, PatternResult, ScoreResult } from "@/lib/types";
 import { getGrade } from "@/lib/types";
 import { ALL_CATEGORIES, type PatternCategory } from "@/lib/scoring/patterns";
+import { analyseAllStatistical } from "@/lib/scoring/statistical";
 import { countWords, extractContext } from "@/lib/utils";
 
 export type { SlopScore, CategoryResult };
@@ -193,9 +194,22 @@ export function calculateScore(text: string): SlopScore {
     };
   }
 
-  const categories = ALL_CATEGORIES.map((cat) =>
+  const patternCategories = ALL_CATEGORIES.map((cat) =>
     analyseCategory(text, wordCount, cat)
   );
+
+  // Statistical analysis (sentence rhythm, vocabulary, burstiness)
+  const statisticalResults = analyseAllStatistical(text);
+  const statisticalCategories: CategoryResult[] = statisticalResults.map((s) => ({
+    category: s.category,
+    weight: s.weight,
+    matches: [],
+    density: s.density,
+    severity: s.severity,
+    detail: s.detail,
+  }));
+
+  const categories = [...patternCategories, ...statisticalCategories];
 
   // Weighted sum: max possible = sum of all weights = 100
   const raw = categories.reduce((sum, c) => sum + c.density * c.weight, 0);
@@ -210,7 +224,7 @@ export function calculateScore(text: string): SlopScore {
 // Converts the raw SlopScore into the ScoreResult shape the UI consumes.
 export function toScoreResult(slopScore: SlopScore, originalText: string): ScoreResult {
   const patterns: PatternResult[] = slopScore.categories
-    .filter((c) => c.matches.length > 0)
+    .filter((c) => c.matches.length > 0 || c.detail)
     .map((c) => ({
       category: c.category,
       count: c.matches.length,
@@ -218,6 +232,7 @@ export function toScoreResult(slopScore: SlopScore, originalText: string): Score
       instances: c.matches.slice(0, 8).map((m) =>
         extractContext(originalText, m.position, m.text.length, 12)
       ),
+      detail: c.detail,
     }));
 
   const highlights: HighlightSpan[] = slopScore.categories.flatMap((c) =>

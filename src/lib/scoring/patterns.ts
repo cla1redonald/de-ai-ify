@@ -11,11 +11,11 @@ export interface PatternCategory {
   patterns: Array<string | RegExp>;
 }
 
-// ── Category 1 — Overused Transitions (weight: 15, expected: 0.8/100 words) ──
+// ── Category 1 — Overused Transitions (weight: 10, expected: 0.8/100 words) ──
 // Detected when they appear as sentence starters or after comma/semicolon.
 export const TRANSITIONS: PatternCategory = {
   name: "Transitional Phrases",
-  weight: 15,
+  weight: 10,
   expected: 0.8,
   matchMode: "phrase",
   patterns: [
@@ -45,14 +45,25 @@ export const TRANSITIONS: PatternCategory = {
     "as a result",
     "for instance",
     "for example",
+    // AI-distinctive transitions humans rarely use
+    "it's also worth",
+    "it is also worth",
+    "equally important",
+    "by the same token",
+    "in this regard",
+    "to that end",
+    "with this in mind",
+    "along these lines",
+    "in much the same way",
+    "by extension",
   ],
 };
 
-// ── Category 2 — AI Clichés (weight: 25, expected: 0.3/100 words) ──
+// ── Category 2 — AI Clichés (weight: 18, expected: 0.3/100 words) ──
 // Partial phrase matches anywhere within a sentence.
 export const CLICHES: PatternCategory = {
   name: "AI Clichés",
-  weight: 25,
+  weight: 18,
   expected: 0.3,
   matchMode: "phrase",
   patterns: [
@@ -110,13 +121,33 @@ export const CLICHES: PatternCategory = {
     "the power of",
     "seamlessly integrate",
     "seamlessly",
+    // More AI clichés that slipped through
+    "stands as a",
+    "serves as a reminder",
+    "serves as a testament",
+    "it's worth exploring",
+    "at its core",
+    "when it comes to",
+    "the intersection of",
+    "a deeper understanding",
+    "shaping the future",
+    "paving the way",
+    "a game changer",
+    "redefining",
+    "reimagining",
+    "double-edged sword",
+    "it remains to be seen",
+    "only time will tell",
+    "the million-dollar question",
+    "make informed decisions",
+    "informed decision",
   ],
 };
 
-// ── Category 3 — Hedging Language (weight: 15, expected: 0.6/100 words) ──
+// ── Category 3 — Hedging Language (weight: 10, expected: 0.6/100 words) ──
 export const HEDGING: PatternCategory = {
   name: "Hedging Language",
-  weight: 15,
+  weight: 10,
   expected: 0.6,
   matchMode: "phrase",
   patterns: [
@@ -155,13 +186,26 @@ export const HEDGING: PatternCategory = {
     "can be seen as",
     "may be considered",
     "might be considered",
+    // AI hedging patterns
+    "it's no secret that",
+    "it is no secret that",
+    "needless to say",
+    "it goes without saying",
+    "the importance of",
+    "cannot be overstated",
+    "it's safe to say",
+    "it is safe to say",
+    "both challenges and opportunities",
+    "challenges and opportunities",
+    "pros and cons",
+    "benefits and drawbacks",
   ],
 };
 
-// ── Category 4 — Corporate Buzzwords (weight: 20, expected: 0.5/100 words) ──
+// ── Category 4 — Corporate Buzzwords (weight: 14, expected: 0.5/100 words) ──
 export const BUZZWORDS: PatternCategory = {
   name: "Corporate Buzzwords",
-  weight: 20,
+  weight: 14,
   expected: 0.5,
   matchMode: "word-boundary",
   patterns: [
@@ -211,14 +255,26 @@ export const BUZZWORDS: PatternCategory = {
     "strategic",
     "move the needle",
     "deep dive",
+    // More corporate AI buzzwords
+    "holistic",
+    "comprehensive",
+    "multifaceted",
+    "data-driven",
+    "mission-critical",
+    "end-to-end",
+    "cross-functional",
+    "key stakeholders",
+    "core competencies",
+    "thought leadership",
+    "paradigm",
   ],
 };
 
-// ── Category 5 — Robotic Structural Patterns (weight: 25, expected: 0.4/100 words) ──
+// ── Category 5 — Robotic Structural Patterns (weight: 18, expected: 0.4/100 words) ──
 // Regex-based: detect structural patterns, not just phrases.
 export const STRUCTURE: PatternCategory = {
   name: "Robotic Structure",
-  weight: 25,
+  weight: 18,
   expected: 0.4,
   matchMode: "regex",
   patterns: [
@@ -245,6 +301,18 @@ export const STRUCTURE: PatternCategory = {
 
     // Closing summary tells: "In conclusion", "To wrap up", "In summary", "To sum up"
     /^(in conclusion|to conclude|to wrap (up|things up)|in summary|to sum up|all in all|as we (have seen|can see)|when all is said and done)/gim,
+
+    // "Whether you're X or Y" — AI-distinctive structure
+    /whether you[''']?re\s+\w+(?:\s+\w+){0,5}\s+or\s+\w+/gi,
+
+    // "From X to Y" parallel structure (AI loves these)
+    /from\s+\w+(?:\s+\w+){0,3}\s+to\s+\w+(?:\s+\w+){0,3},\s+\w+/gi,
+
+    // "Not only X, but also Y" — AI over-uses this construction
+    /not only\s+[^,]+,?\s+but\s+(also\s+)?/gi,
+
+    // Emoji-style bullet lists in prose (common in AI LinkedIn/blog)
+    /[🔑🚀💡✨🎯📊🌟⭐💪🔥✅❌⚡🎉📈📉🏆]/g,
   ],
 };
 
