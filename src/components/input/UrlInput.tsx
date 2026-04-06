@@ -18,20 +18,31 @@ interface UrlInputProps {
   value: string;
   onChange: (val: string) => void;
   error: string | null;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
-export default function UrlInput({ value, onChange, error }: UrlInputProps) {
-  // TODO: implement
+export default function UrlInput({ value, onChange, error, inputRef }: UrlInputProps) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       <input
+        ref={inputRef}
         type="url"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="https://linkedin.com/posts/..."
-        className="w-full bg-bg-surface border border-border-subtle rounded px-3 py-2 text-text-primary text-sm font-mono placeholder:text-text-tertiary"
+        aria-label="URL to score"
+        aria-describedby={error ? "url-error" : undefined}
+        aria-invalid={error ? true : undefined}
+        className={`w-full bg-bg-surface border rounded px-3 py-3 text-text-primary text-sm font-mono placeholder:text-text-tertiary transition-colors ${
+          error ? "border-score-red" : "border-border-subtle hover:border-text-tertiary focus:border-accent"
+        }`}
       />
-      {error && <p className="text-score-red text-xs">{error}</p>}
+      {error && (
+        <p id="url-error" className="text-score-red text-xs flex items-center gap-1">
+          <span aria-hidden="true">⚠</span>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

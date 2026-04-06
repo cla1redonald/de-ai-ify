@@ -1,23 +1,24 @@
-// TODO(@engineer): Implement <PatternBreakdown />.
-//
-// Props:
-//   patterns: PatternResult[]
-//
-// Renders a <PatternRow /> for each detected category (skip categories with count === 0).
-//
-// See docs/design.md §"Pattern breakdown".
-
 import type { PatternResult } from "@/lib/types";
+import PatternRow from "@/components/results/PatternRow";
 
 interface PatternBreakdownProps {
   patterns: PatternResult[];
 }
 
-export default function PatternBreakdown({ patterns: _patterns }: PatternBreakdownProps) {
-  // TODO: implement — filter out zero-count categories, render PatternRow per category
+export default function PatternBreakdown({ patterns }: PatternBreakdownProps) {
+  const visible = patterns.filter((p) => p.count > 0);
+  if (visible.length === 0) return null;
+
   return (
-    <div className="space-y-2">
-      <p className="text-text-secondary text-sm font-mono">// PatternBreakdown — TODO</p>
+    <div className="space-y-3">
+      <h2 className="text-xs font-medium tracking-widest uppercase text-text-secondary">
+        What we found
+      </h2>
+      <div className="space-y-2">
+        {visible.map((p, i) => (
+          <PatternRow key={p.category} pattern={p} defaultOpen={i === 0} />
+        ))}
+      </div>
     </div>
   );
 }

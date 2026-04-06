@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# de-ai-ify
 
-## Getting Started
+**No more mush.**
 
-First, run the development server:
+Paste a URL or a block of text and get a score for how much it reads like AI-generated prose. Five pattern categories, instant client-side analysis, no API calls for scoring. When the text is bad enough to fix, Claude rewrites it.
+
+---
+
+## How it works
+
+### Scoring
+
+Scoring runs entirely in the browser — no network requests, no latency.
+
+The engine scans text across five categories:
+
+| Category | What it catches |
+|---|---|
+| **Transitional Phrases** | moreover, furthermore, in conclusion, first and foremost, last but not least... |
+| **AI Clichés** | delve into, navigate the complexities, game-changer, paradigm shift, harness the power of... |
+| **Hedging Language** | it's important to note, it's worth mentioning, one might argue, plays a crucial role... |
+| **Corporate Buzzwords** | utilize, leverage, facilitate, synergize, streamline, actionable insights... |
+| **Robotic Structure** | rhetorical questions answered immediately, formulaic three-point lists, templated paragraph openings... |
+
+Each category is scored using a sigmoid density curve — matches per hundred words mapped against a baseline for normal prose. This prevents short texts from being penalised unfairly for a single match. Categories carry different weights; the final score is a weighted sum, 0–100.
+
+**Score tiers:**
+
+- **0–30** — Human
+- **31–69** — Mixed
+- **70–100** — Slop
+
+### Rewrites
+
+Flagged text can be rewritten by Claude (claude-sonnet-4). The model is instructed to remove AI patterns while preserving meaning, register, and length. Rewrites are rate-limited to **3 per day** per IP address on the free tier, enforced server-side.
+
+### URL scraping
+
+Paste a URL instead of text and the scrape endpoint fetches the article content via Firecrawl, then scores it.
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 18+
+- An [Anthropic API key](https://console.anthropic.com/) (rewrites only)
+- A [Firecrawl API key](https://firecrawl.dev/) (URL scraping only)
+
+Scoring works without either key. You only need them if you want rewrites and URL scraping.
+
+### Install
+
+```bash
+git clone https://github.com/your-org/de-ai-ify.git
+cd de-ai-ify
+npm install
+```
+
+### Environment variables
+
+Create a `.env.local` file in the project root:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+FIRECRAWL_API_KEY=fc-...
+```
+
+Both are optional for local development if you only want to test scoring.
+
+---
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+```
 
-## Learn More
+163 tests covering the scoring engine, pattern matching, and sample texts. Uses Vitest.
 
-To learn more about Next.js, take a look at the following resources:
+To run in watch mode:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run test:watch
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The app deploys to Vercel with zero configuration.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx vercel --prod
+```
+
+Add `ANTHROPIC_API_KEY` and `FIRECRAWL_API_KEY` to your Vercel project environment variables. Scoring works without them; rewrites and URL scraping will return errors until they are set.
+
+---
+
+## Stack
+
+- **Next.js 16** (App Router)
+- **TypeScript**
+- **Tailwind CSS v4**
+- **Vitest** — test runner
+- **Anthropic SDK** — rewrites via Claude
+- **Firecrawl** — URL content extraction
+
+---
+
+## License
+
+MIT

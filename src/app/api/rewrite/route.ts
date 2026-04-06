@@ -1,56 +1,149 @@
-// TODO(@engineer): Implement POST /api/rewrite
-//
-// Accepts: { text: string }
-//
-// Responses:
-//   200: { rewritten: string, model: string }
-//   400: { error: "INVALID_INPUT", message: string }
-//   429: { error: "RATE_LIMITED", remaining: 0, resetsAt: string }
-//
-// Implementation:
-//   1. Input validation — reject if < 20 words or > 5000 words. Return 400.
-//
-//   2. Server-side rate limiting (authoritative) — import from src/lib/rate-limit.ts:
-//        - Key by request IP: req.headers.get('x-forwarded-for') ?? 'unknown'
-//        - 3 calls per IP per 24h rolling window (in-memory Map for MVP)
-//        - If limit exceeded: return 429 with resetsAt timestamp
-//
-//   3. Claude call — architecture specifies @anthropic-ai/sdk directly:
-//        import Anthropic from '@anthropic-ai/sdk'
-//        const client = new Anthropic()  // reads ANTHROPIC_API_KEY from env automatically
-//        model: 'claude-sonnet-4-20250514'
-//
-//      Note: Vercel AI SDK (@ai-sdk/anthropic + 'ai' package) is an alternative that
-//      provides streaming and provider abstraction. Evaluate if streaming rewrite output
-//      to the client becomes a requirement. For non-streaming MVP, direct SDK is simpler.
-//
-//      System prompt must instruct Claude to:
-//        - Remove AI slop patterns (transitional phrases, clichés, hedging, buzzwords)
-//        - Preserve the original meaning exactly — do not add or remove substance
-//        - Match the register (formal stays formal, casual stays casual)
-//        - Do NOT introduce new AI patterns in the rewrite
-//        - Keep roughly the same length
-//        - Return ONLY the rewritten text, no preamble or explanation
-//
-//   4. Return { rewritten: message.content[0].text, model: 'claude-sonnet-4-20250514' }
-//
-//   5. Do NOT decrement rate limit on Claude API error (5xx/timeout).
-//      Only count against limit when Claude returns a successful response.
-//
-// Observability:
-//   - Log: hashed IP, word count, rate limit remaining before call
-//   - Log: Claude response time, model used
-//   - Log: error status code on failure (do NOT log text content — it may be sensitive)
-//   - 429 rate spikes indicate abuse or limit too low — alert if > 5% of requests
-//
-// See docs/architecture.md §"POST /api/rewrite" and §"Rate Limiting Strategy".
-
 import type { NextRequest } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { countWords, hashIp } from "@/lib/utils";
 
-export async function POST(_req: NextRequest): Promise<Response> {
-  // TODO: implement
-  return Response.json(
-    { error: "NOT_IMPLEMENTED", message: "Rewrite route not yet implemented" },
-    { status: 501 }
+const MODEL = "claude-sonnet-4-20250514";
+
+const SYSTEM_PROMPT = `You are an expert editor who specialises in removing AI writing patterns from text.
+
+Your task: rewrite the provided text to sound like it was written by a confident, direct human being.
+
+Rules:
+- Remove all AI clichés: "delve into", "navigate the complexities", "in today's rapidly evolving world", "paradigm shift", "harness the power of", "game-changer", "it's not just about X, it's about Y", etc.
+- Remove transitional phrase overuse: "moreover", "furthermore", "additionally", "it is worth noting", "that being said", etc. Use them only where genuinely necessary.
+- Remove corporate buzzwords: "utilize" → "use", "leverage" (as verb) → cut or rephrase, "facilitate" → be specific, "synergize", "streamline", "stakeholders", "actionable insights", etc.
+- Remove hedging padding: "it's important to note that", "it's worth mentioning", "one might argue", "plays a crucial role" → say what it actually does.
+- Remove robotic structural patterns: rhetorical questions answered immediately, "there are three key factors:", formulaic "first... second... third..." paragraphs unless they genuinely aid clarity.
+
+Preserve:
+- The original meaning exactly — do not add or remove substance
+- The register: formal text stays formal, casual text stays casual, technical text stays technical
+- Roughly the same length — do not pad or compress significantly
+- Any specific facts, data, names, or claims
+
+Do NOT:
+- Add new AI patterns to replace the ones removed
+- Add a preamble like "Here is the rewritten text:" — return ONLY the rewritten text
+- Change the core argument or perspective
+- Make it sound more formal than the original
+
+Return ONLY the rewritten text, nothing else.`;
+
+export async function POST(req: NextRequest): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json(
+      { error: "INVALID_INPUT", message: "Request body must be JSON." },
+      { status: 400 }
+    );
+  }
+
+  const { text } = body as { text?: string };
+
+  if (!text || typeof text !== "string") {
+    return Response.json(
+      { error: "INVALID_INPUT", message: "text field is required." },
+      { status: 400 }
+    );
+  }
+
+  const wordCount = countWords(text);
+
+  if (wordCount < 20) {
+    return Response.json(
+      {
+        error: "INVALID_INPUT",
+        message: "Text is too short. Paste at least a few sentences.",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (wordCount > 5000) {
+    return Response.json(
+      {
+        error: "INVALID_INPUT",
+        message: `Text is too long (${wordCount} words). Maximum is 5,000 words.`,
+      },
+      { status: 400 }
+    );
+  }
+
+  // Server-side rate limiting (authoritative)
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  const rateLimit = checkRateLimit(ip);
+
+  const hashedIp = await hashIp(ip);
+  console.log(
+    `[rewrite] ip=${hashedIp} words=${wordCount} remaining=${rateLimit.remaining} allowed=${rateLimit.allowed}`
   );
+
+  if (!rateLimit.allowed) {
+    return Response.json(
+      {
+        error: "RATE_LIMITED",
+        remaining: 0,
+        resetsAt: rateLimit.resetsAt,
+      },
+      { status: 429 }
+    );
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error("[rewrite] ANTHROPIC_API_KEY not set");
+    return Response.json(
+      { error: "REWRITE_FAILED", message: "Rewrite service is not configured." },
+      { status: 500 }
+    );
+  }
+
+  const startTime = Date.now();
+
+  try {
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: text,
+        },
+      ],
+    });
+
+    const duration = Date.now() - startTime;
+    console.log(`[rewrite] success ip=${hashedIp} model=${MODEL} duration=${duration}ms`);
+
+    const rewritten =
+      message.content[0]?.type === "text" ? message.content[0].text : "";
+
+    if (!rewritten) {
+      return Response.json(
+        { error: "REWRITE_FAILED", message: "Rewrite failed. Try again in a moment." },
+        { status: 500 }
+      );
+    }
+
+    return Response.json({ rewritten, model: MODEL });
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    const statusCode = err instanceof Anthropic.APIError ? err.status : 500;
+    console.error(`[rewrite] error ip=${hashedIp} status=${statusCode} duration=${duration}ms`);
+
+    return Response.json(
+      { error: "REWRITE_FAILED", message: "Rewrite failed. Try again in a moment." },
+      { status: 500 }
+    );
+  }
 }

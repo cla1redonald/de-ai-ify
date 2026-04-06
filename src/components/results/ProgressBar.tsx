@@ -16,10 +16,12 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
+
 const colourMap = {
   green: "bg-score-green",
   amber: "bg-score-amber",
-  red:   "bg-score-red",
+  red: "bg-score-red",
 };
 
 interface ProgressBarProps {
@@ -28,8 +30,22 @@ interface ProgressBarProps {
   animate: boolean;
 }
 
-export default function ProgressBar({ value, color, animate: _animate }: ProgressBarProps) {
-  // TODO: implement animated width transition
+export default function ProgressBar({ value, color, animate }: ProgressBarProps) {
+  // Start at 0, then transition to final value on next tick so CSS transition fires
+  const [width, setWidth] = useState(animate ? 0 : value);
+
+  useEffect(() => {
+    if (!animate) {
+      setWidth(value);
+      return;
+    }
+    // One frame delay ensures the initial 0% renders before we set the target
+    const frame = requestAnimationFrame(() => {
+      setWidth(value);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [animate, value]);
+
   return (
     <div
       className="h-1.5 rounded-full bg-border-subtle overflow-hidden"
@@ -37,10 +53,11 @@ export default function ProgressBar({ value, color, animate: _animate }: Progres
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}
+      aria-label={`Score: ${value} out of 100`}
     >
       <div
-        className={`h-full rounded-full transition-[width] duration-700 ${colourMap[color]}`}
-        style={{ width: `${value}%` }}
+        className={`h-full rounded-full transition-[width] duration-[800ms] ease-out ${colourMap[color]}`}
+        style={{ width: `${width}%` }}
       />
     </div>
   );

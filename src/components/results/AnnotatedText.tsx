@@ -1,29 +1,6 @@
-// TODO(@engineer): Implement <AnnotatedText />.
-//
-// Props:
-//   text: string
-//   highlights: HighlightSpan[]    // { start, end, category }
-//   defaultCollapsed?: boolean     // true on mobile (docs/design.md §7)
-//
-// Renders text with <mark> elements wrapping highlighted spans.
-//   Highlight style: className="bg-[rgba(232,197,71,0.18)] rounded-sm px-0.5"
-//   Tooltip: title={span.category} on the <mark> element
-//   <mark> has semantic meaning for annotated/highlighted text (accessibility win)
-//
-// Algorithm:
-//   1. Sort highlights by start position.
-//   2. Walk through text, alternating plain text segments and <mark> spans.
-//   3. Overlapping spans: merge or take the first (decide and be consistent).
-//
-// On mobile (defaultCollapsed=true): wrap in a disclosure with "Show annotated text ↓".
-//   Use useState for open/closed — do NOT use <details> (styling limitations).
-//
-// Container: bg-bg-surface rounded p-4 font-mono text-sm leading-relaxed
-//
-// See docs/design.md §"Highlighted text panel" and §"<AnnotatedText />".
-
 "use client";
 
+import { useState, useMemo } from "react";
 import type { HighlightSpan } from "@/lib/types";
 
 interface AnnotatedTextProps {
@@ -33,15 +10,88 @@ interface AnnotatedTextProps {
 }
 
 export default function AnnotatedText({
-  text: _text,
-  highlights: _highlights,
+  text,
+  highlights,
   defaultCollapsed = false,
 }: AnnotatedTextProps) {
-  // TODO: implement span-walking render and disclosure on mobile
-  void defaultCollapsed;
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  // Build non-overlapping highlight segments
+  const segments = useMemo(() => {
+    if (highlights.length === 0) return [{ text, highlighted: false, category: "" }];
+
+    // Sort by start, merge overlaps
+    const sorted = [...highlights].sort((a, b) => a.start - b.start);
+    const merged: HighlightSpan[] = [];
+    for (const span of sorted) {
+      const last = merged[merged.length - 1];
+      if (last && span.start < last.end) {
+        // Merge — extend the end, keep the first category
+        merged[merged.length - 1] = { ...last, end: Math.max(last.end, span.end) };
+      } else {
+        merged.push({ ...span });
+      }
+    }
+
+    // Walk through text building segments
+    const result: Array<{ text: string; highlighted: boolean; category: string }> = [];
+    let cursor = 0;
+
+    for (const span of merged) {
+      if (span.start > cursor) {
+        result.push({ text: text.slice(cursor, span.start), highlighted: false, category: "" });
+      }
+      result.push({
+        text: text.slice(span.start, span.end),
+        highlighted: true,
+        category: span.category,
+      });
+      cursor = span.end;
+    }
+
+    if (cursor < text.length) {
+      result.push({ text: text.slice(cursor), highlighted: false, category: "" });
+    }
+
+    return result;
+  }, [text, highlights]);
+
   return (
-    <div className="bg-bg-surface rounded p-4 font-mono text-sm leading-relaxed text-text-mono">
-      <p className="text-text-tertiary text-xs">// AnnotatedText — TODO</p>
+    <div className="space-y-3">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="text-xs font-medium tracking-widest uppercase text-text-secondary hover:text-text-primary transition-colors flex items-center gap-2"
+      >
+        <span
+          className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
+          aria-hidden="true"
+        >
+          &#9656;
+        </span>
+        Annotated text
+      </button>
+
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-out ${
+          collapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
+        }`}
+      >
+        <div className="bg-bg-surface rounded p-4 font-mono text-sm leading-relaxed text-text-mono whitespace-pre-wrap">
+          {segments.map((seg, i) =>
+            seg.highlighted ? (
+              <mark
+                key={i}
+                className="bg-accent/15 text-accent rounded-sm px-0.5"
+                title={seg.category}
+              >
+                {seg.text}
+              </mark>
+            ) : (
+              <span key={i}>{seg.text}</span>
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -17,28 +17,53 @@
 
 "use client";
 
+import { useRef, KeyboardEvent } from "react";
+
 interface TabBarProps {
   active: "url" | "text";
   onChange: (tab: "url" | "text") => void;
 }
 
+const TABS = [
+  { id: "url" as const, label: "Paste URL" },
+  { id: "text" as const, label: "Paste Text" },
+];
+
 export default function TabBar({ active, onChange }: TabBarProps) {
-  // TODO: implement full ARIA tablist
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function handleKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (e.key === "ArrowRight") {
+      const next = (index + 1) % TABS.length;
+      tabRefs.current[next]?.focus();
+      onChange(TABS[next].id);
+    } else if (e.key === "ArrowLeft") {
+      const prev = (index - 1 + TABS.length) % TABS.length;
+      tabRefs.current[prev]?.focus();
+      onChange(TABS[prev].id);
+    }
+  }
+
   return (
-    <div role="tablist" className="flex gap-6 border-b border-border-subtle">
-      {(["url", "text"] as const).map((tab) => (
+    <div role="tablist" aria-label="Input method" className="flex gap-6 border-b border-border-subtle">
+      {TABS.map((tab, i) => (
         <button
-          key={tab}
+          key={tab.id}
+          ref={(el) => { tabRefs.current[i] = el; }}
           role="tab"
-          aria-selected={active === tab}
-          onClick={() => onChange(tab)}
+          id={`tab-${tab.id}`}
+          aria-selected={active === tab.id}
+          aria-controls={`tabpanel-${tab.id}`}
+          tabIndex={active === tab.id ? 0 : -1}
+          onClick={() => onChange(tab.id)}
+          onKeyDown={(e) => handleKeyDown(e, i)}
           className={
-            active === tab
-              ? "text-accent border-b-2 border-accent pb-2 text-sm font-medium"
-              : "text-text-secondary pb-2 text-sm hover:text-text-primary"
+            active === tab.id
+              ? "text-accent border-b-2 border-accent pb-2 text-sm font-medium -mb-px transition-colors"
+              : "text-text-secondary pb-2 text-sm hover:text-text-primary transition-colors"
           }
         >
-          {tab === "url" ? "Paste URL" : "Paste Text"}
+          {tab.label}
         </button>
       ))}
     </div>

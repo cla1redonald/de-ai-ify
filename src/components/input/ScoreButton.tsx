@@ -22,14 +22,22 @@ interface ScoreButtonProps {
 }
 
 export default function ScoreButton({ isLoading, onClick, disabled }: ScoreButtonProps) {
-  // TODO: implement
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled || isLoading}
-      className="w-full h-12 bg-accent text-bg-base font-semibold text-sm tracking-wide rounded disabled:opacity-50"
+      aria-disabled={disabled || isLoading}
+      className="w-full h-12 bg-accent hover:bg-accent-hover text-bg-base font-semibold text-sm tracking-wide rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
-      {isLoading ? <Spinner size="sm" /> : "Score it"}
+      {isLoading ? (
+        <>
+          <Spinner size="sm" />
+          <span>Scoring…</span>
+        </>
+      ) : (
+        "Score it"
+      )}
     </button>
   );
 }

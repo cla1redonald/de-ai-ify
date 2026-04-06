@@ -1,25 +1,3 @@
-// TODO(@engineer): Implement <PatternRow />.
-//
-// Props:
-//   pattern: PatternResult   // { category, count, severity, instances: string[] }
-//   defaultOpen?: boolean
-//
-// Layout:
-//   [Category badge] [Count pill] [Severity dot] [Expand chevron →]
-//   └── Expanded: list of instances in font-mono text-xs (15 words of context each)
-//
-// Styles:
-//   Category badge: bg-bg-raised text-text-secondary text-xs font-medium px-2 py-0.5 rounded
-//   Count pill:     bg-score-{severity}/20 text-score-{severity} text-xs px-2 py-0.5 rounded-full
-//   Expand/collapse: max-h transition — max-h-0 → max-h-96 overflow-hidden transition-all duration-200
-//
-// Severity → colour mapping:
-//   low    → score-green
-//   medium → score-amber
-//   high   → score-red
-//
-// See docs/design.md §"Pattern breakdown" and §"<PatternRow />".
-
 "use client";
 
 import { useState } from "react";
@@ -30,22 +8,82 @@ interface PatternRowProps {
   defaultOpen?: boolean;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+const severityColor = {
+  low: "bg-score-green/15 text-score-green",
+  medium: "bg-score-amber/15 text-score-amber",
+  high: "bg-score-red/15 text-score-red",
+} as const;
+
+const severityDot = {
+  low: "bg-score-green",
+  medium: "bg-score-amber",
+  high: "bg-score-red",
+} as const;
+
 export default function PatternRow({ pattern, defaultOpen = false }: PatternRowProps) {
   const [open, setOpen] = useState(defaultOpen);
-  // TODO: implement full expand/collapse with correct severity colours
+
   return (
-    <div className="border border-border-subtle rounded p-3">
+    <div className="border border-border-subtle rounded overflow-hidden transition-colors hover:border-border-subtle/80">
       <button
-        className="w-full flex items-center justify-between"
+        className="w-full flex items-center gap-3 p-3 text-left"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
-        <span className="text-xs font-medium text-text-secondary bg-bg-raised px-2 py-0.5 rounded">
+        {/* Severity dot */}
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${severityDot[pattern.severity]}`} />
+
+        {/* Category name */}
+        <span className="text-sm font-medium text-text-primary flex-1">
           {pattern.category}
         </span>
-        <span className="text-xs text-text-tertiary">{pattern.count} instances</span>
+
+        {/* Count pill */}
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${severityColor[pattern.severity]}`}>
+          {pattern.count}
+        </span>
+
+        {/* Chevron */}
+        <span
+          className={`text-text-tertiary text-xs transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+          aria-hidden="true"
+        >
+          &#9656;
+        </span>
       </button>
-      {/* TODO: expand panel with instances */}
+
+      {/* Expanded instances */}
+      <div
+        className={`overflow-hidden transition-all duration-200 ease-out ${
+          open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="px-3 pb-3 pt-0">
+          <div className="bg-bg-surface rounded p-3 space-y-1.5">
+            {pattern.instances.map((instance, i) => (
+              <p
+                key={i}
+                className="font-mono text-xs leading-relaxed text-text-mono"
+                dangerouslySetInnerHTML={{
+                  __html: escapeHtml(instance).replace(
+                    /\*\*(.*?)\*\*/g,
+                    '<mark class="bg-accent/20 text-accent rounded-sm px-0.5 font-medium">$1</mark>'
+                  ),
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

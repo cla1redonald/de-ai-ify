@@ -1,48 +1,69 @@
-// TODO(@engineer): Utility functions used across the app.
-// These are pure functions — no side effects, no imports from Next.js.
+// Utility functions used across the app.
+// Pure functions — no side effects, no imports from Next.js.
 
 // ── Word counting ──────────────────────────────────────────────────────────
 
 /**
  * Count words in a string.
  * Split on whitespace, filter empty strings.
- * Used by scoring engine and API route input validation.
- * TODO: implement
  */
-export function countWords(_text: string): number {
-  return 0; // TODO: text.trim().split(/\s+/).filter(Boolean).length
+export function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
 // ── URL validation ─────────────────────────────────────────────────────────
 
 /**
  * Returns true if the string is a valid http:// or https:// URL.
- * Used by client-side validation before calling /api/scrape.
- * TODO: implement using URL constructor — wrap in try/catch.
  */
-export function isValidUrl(_input: string): boolean {
-  return false; // TODO: try { const u = new URL(input); return u.protocol === 'http:' || u.protocol === 'https:' } catch { return false }
+export function isValidUrl(input: string): boolean {
+  try {
+    const u = new URL(input);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 // ── Text cleaning ──────────────────────────────────────────────────────────
 
 /**
- * Strip markdown syntax (headings, bold, italic, links, code fences, etc.)
- * to produce plain text suitable for scoring.
- * Used by /api/scrape after Firecrawl returns markdown.
- * TODO: implement with regex replacements.
+ * Strip markdown syntax to produce plain text suitable for scoring.
  */
-export function stripMarkdown(_markdown: string): string {
-  return _markdown; // TODO: implement
+export function stripMarkdown(markdown: string): string {
+  return markdown
+    // Remove fenced code blocks
+    .replace(/```[\s\S]*?```/g, " ")
+    // Remove inline code
+    .replace(/`[^`]+`/g, " ")
+    // Remove headings (# ## ###)
+    .replace(/^#{1,6}\s+/gm, "")
+    // Remove images ![alt](url)
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    // Remove links [text](url)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    // Remove bold/italic ***text*** **text** *text* __text__ _text_
+    .replace(/(\*{1,3}|_{1,3})(.+?)\1/g, "$2")
+    // Remove horizontal rules
+    .replace(/^[-*_]{3,}\s*$/gm, " ")
+    // Remove blockquotes
+    .replace(/^>\s*/gm, "")
+    // Remove HTML tags
+    .replace(/<[^>]+>/g, " ")
+    // Remove table separators |---|---|
+    .replace(/^\|[-:|]+\|[-:||\s]*$/gm, "")
+    // Collapse table rows to text
+    .replace(/\|/g, " ")
+    // Normalise
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
  * Normalise whitespace: collapse multiple spaces/newlines into single space.
- * Used before word counting and pattern matching.
- * TODO: implement
  */
-export function normaliseWhitespace(_text: string): string {
-  return _text; // TODO: text.replace(/\s+/g, ' ').trim()
+export function normaliseWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 // ── Context extraction ─────────────────────────────────────────────────────
@@ -50,25 +71,50 @@ export function normaliseWhitespace(_text: string): string {
 /**
  * Extract surrounding context for a matched phrase.
  * Returns up to `windowWords` words either side of `position`.
- * Used by scoring engine to build PatternMatch.text with context.
- * TODO: implement
  */
 export function extractContext(
-  _text: string,
-  _position: number,
-  _windowWords: number = 15
+  text: string,
+  position: number,
+  matchLength: number,
+  windowWords: number = 15
 ): string {
-  return ""; // TODO: implement
+  // Walk left from position to find start of window
+  let start = position;
+  let wordsLeft = 0;
+  while (start > 0 && wordsLeft < windowWords) {
+    start--;
+    if (text[start] === " ") wordsLeft++;
+  }
+
+  // Walk right from end of match to find end of window
+  let end = position + matchLength;
+  let wordsRight = 0;
+  while (end < text.length && wordsRight < windowWords) {
+    end++;
+    if (text[end] === " ") wordsRight++;
+  }
+
+  // Build context with **bold** around the matched phrase
+  const before = text.slice(start, position).trim();
+  const match = text.slice(position, position + matchLength);
+  const after = text.slice(position + matchLength, end).trim();
+
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < text.length ? "…" : "";
+  return `${prefix}${before} **${match}**${after ? " " + after : ""}${suffix}`;
 }
 
 // ── IP hashing (server-side only) ─────────────────────────────────────────
 
 /**
  * One-way hash an IP address for logging.
- * Use crypto.subtle.digest('SHA-256', ...) — available in Edge and Node runtimes.
- * Returns first 8 hex chars of SHA-256 — enough to correlate logs, not enough to reverse.
- * TODO: implement
+ * Returns first 8 hex chars of SHA-256.
  */
-export async function hashIp(_ip: string): Promise<string> {
-  return "00000000"; // TODO: implement with SubtleCrypto
+export async function hashIp(ip: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(ip);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  return hashHex.slice(0, 8);
 }
