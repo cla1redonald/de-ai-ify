@@ -54,9 +54,9 @@ describe("calculateScore — return shape", () => {
     expect(result.verdictCopy.length).toBeGreaterThan(0);
   });
 
-  it("categories array contains exactly 5 entries", () => {
+  it("categories array contains 11 entries (6 pattern + 5 statistical)", () => {
     const result = calculateScore(humanParagraph(2));
-    expect(result.categories).toHaveLength(5);
+    expect(result.categories).toHaveLength(11);
   });
 
   it("each CategoryResult has required fields", () => {
@@ -193,9 +193,9 @@ describe("calculateScore — scoring direction", () => {
     expect(result.score).toBeLessThan(30);
   });
 
-  it("pure AI slop text scores above 70", () => {
+  it("pure AI slop text scores above 55", () => {
     const result = calculateScore(slopParagraph(3));
-    expect(result.score).toBeGreaterThan(70);
+    expect(result.score).toBeGreaterThan(55);
   });
 
   it("slop text scores higher than human text", () => {

@@ -5,6 +5,7 @@ import {
   HEDGING,
   BUZZWORDS,
   STRUCTURE,
+  CONNECTIVE_TISSUE,
   ALL_CATEGORIES,
   type PatternCategory,
 } from "@/lib/scoring/patterns";
@@ -12,13 +13,13 @@ import {
 // ── Shape / contract ──────────────────────────────────────────────────────────
 
 describe("PatternCategory — shape", () => {
-  it("ALL_CATEGORIES contains exactly 5 categories", () => {
-    expect(ALL_CATEGORIES).toHaveLength(5);
+  it("ALL_CATEGORIES contains exactly 6 categories", () => {
+    expect(ALL_CATEGORIES).toHaveLength(6);
   });
 
-  it("all weights sum to 100", () => {
+  it("all pattern weights sum to 68 (statistical categories add the remaining 32)", () => {
     const total = ALL_CATEGORIES.reduce((sum, cat) => sum + cat.weight, 0);
-    expect(total).toBe(100);
+    expect(total).toBe(68);
   });
 
   it("each category has a non-empty name", () => {
@@ -50,11 +51,12 @@ describe("PatternCategory — shape", () => {
 // ── Individual category weights ───────────────────────────────────────────────
 
 describe("Category weights match architecture spec", () => {
-  it("TRANSITIONS has weight 15", () => expect(TRANSITIONS.weight).toBe(15));
-  it("CLICHES has weight 25", () => expect(CLICHES.weight).toBe(25));
-  it("HEDGING has weight 15", () => expect(HEDGING.weight).toBe(15));
-  it("BUZZWORDS has weight 20", () => expect(BUZZWORDS.weight).toBe(20));
-  it("STRUCTURE has weight 25", () => expect(STRUCTURE.weight).toBe(25));
+  it("TRANSITIONS has weight 8", () => expect(TRANSITIONS.weight).toBe(8));
+  it("CLICHES has weight 16", () => expect(CLICHES.weight).toBe(16));
+  it("HEDGING has weight 8", () => expect(HEDGING.weight).toBe(8));
+  it("BUZZWORDS has weight 12", () => expect(BUZZWORDS.weight).toBe(12));
+  it("STRUCTURE has weight 16", () => expect(STRUCTURE.weight).toBe(16));
+  it("CONNECTIVE_TISSUE has weight 8", () => expect(CONNECTIVE_TISSUE.weight).toBe(8));
 });
 
 // ── Expected frequencies match architecture spec ──────────────────────────────

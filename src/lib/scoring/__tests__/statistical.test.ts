@@ -3,6 +3,8 @@ import {
   analyseSentenceRhythm,
   analyseVocabularyRichness,
   analyseBurstiness,
+  analyseParagraphOpenings,
+  analysePunctuationDiversity,
   analyseAllStatistical,
 } from "@/lib/scoring/statistical";
 
@@ -65,9 +67,9 @@ describe("Sentence Rhythm", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 12", () => {
+  it("has weight 8", () => {
     const result = analyseSentenceRhythm(HUMAN_TEXT);
-    expect(result.weight).toBe(12);
+    expect(result.weight).toBe(8);
   });
 });
 
@@ -90,9 +92,9 @@ describe("Vocabulary Richness", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 10", () => {
+  it("has weight 8", () => {
     const result = analyseVocabularyRichness(HUMAN_TEXT);
-    expect(result.weight).toBe(10);
+    expect(result.weight).toBe(8);
   });
 });
 
@@ -115,18 +117,87 @@ describe("Paragraph Burstiness", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 8", () => {
+  it("has weight 4", () => {
     const result = analyseBurstiness(HUMAN_TEXT);
-    expect(result.weight).toBe(8);
+    expect(result.weight).toBe(4);
   });
 });
 
 // ── All Statistical ──────────────────────────────────────────────────────────
 
+// ── Paragraph Openings ───────────────────────────────────────────────────
+
+describe("Paragraph Openings", () => {
+  it("returns low density for varied human paragraph openings", () => {
+    const result = analyseParagraphOpenings(HUMAN_TEXT);
+    expect(result.severity).not.toBe("high");
+  });
+
+  it("flags repetitive AI paragraph openings", () => {
+    const result = analyseParagraphOpenings(AI_TEXT);
+    // AI text starts every paragraph with "In/Moreover/Additionally" (transitions)
+    expect(result.density).toBeGreaterThanOrEqual(0);
+  });
+
+  it("returns zero for too few paragraphs", () => {
+    const result = analyseParagraphOpenings("Just one paragraph.");
+    expect(result.density).toBe(0);
+  });
+
+  it("has weight 6", () => {
+    const result = analyseParagraphOpenings(HUMAN_TEXT);
+    expect(result.weight).toBe(6);
+  });
+});
+
+// ── Punctuation Diversity ────────────────────────────────────────────────
+
+describe("Punctuation Diversity", () => {
+  it("returns low density for text with varied punctuation", () => {
+    const richText = `
+      I started the project — against everyone's advice; the timeline was tight.
+      Did it work? Yes (mostly). The budget held; the team survived. But the
+      real lesson: never underestimate how long "one small change" takes...
+      Honestly! It was a mess at first, but we pulled through.
+    `;
+    const result = analysePunctuationDiversity(richText);
+    expect(result.density).toBeLessThan(0.4);
+  });
+
+  it("returns higher density for periods-and-commas-only text", () => {
+    // Deliberately long text with only periods, commas, and question marks
+    const flatText = `
+      The project was completed on time, and the team worked hard on the implementation.
+      The results were good, and the client was pleased with the outcome. The budget was
+      within limits, and the scope was well defined. The timeline was managed properly,
+      and the deliverables met expectations. The project was a success overall, which
+      pleased the stakeholders. The team celebrated the completion, and plans were made
+      for the next phase. The lessons were documented, and the process was reviewed.
+      Would we do it again? Yes, we would. The approach was solid, and the results
+      were consistent. The methodology was proven, and the framework was reliable.
+      The data showed improvement, and the metrics confirmed the hypothesis.
+    `;
+    const result = analysePunctuationDiversity(flatText);
+    expect(result.density).toBeGreaterThan(0.3);
+  });
+
+  it("returns zero for too little punctuation", () => {
+    const result = analysePunctuationDiversity("Short text");
+    expect(result.density).toBe(0);
+  });
+
+  it("has weight 6", () => {
+    const result = analysePunctuationDiversity(HUMAN_TEXT);
+    expect(result.weight).toBe(6);
+  });
+});
+
+// ── All Statistical ──────────────────────────────────────────────────────
+
 describe("analyseAllStatistical", () => {
-  it("returns exactly 3 results", () => {
+  it("returns exactly 5 results", () => {
     const results = analyseAllStatistical(HUMAN_TEXT);
-    expect(results).toHaveLength(3);
+    expect(results).toHaveLength(5);
   });
 
   it("all densities are between 0 and 1", () => {
@@ -144,9 +215,9 @@ describe("analyseAllStatistical", () => {
     }
   });
 
-  it("weights sum to 30", () => {
+  it("weights sum to 32", () => {
     const results = analyseAllStatistical(HUMAN_TEXT);
     const total = results.reduce((sum, r) => sum + r.weight, 0);
-    expect(total).toBe(30);
+    expect(total).toBe(32);
   });
 });

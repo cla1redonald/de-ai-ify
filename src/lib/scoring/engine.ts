@@ -3,7 +3,7 @@
 
 import type { SlopScore, CategoryResult, PatternMatch, HighlightSpan, PatternResult, ScoreResult } from "@/lib/types";
 import { getGrade } from "@/lib/types";
-import { ALL_CATEGORIES, type PatternCategory } from "@/lib/scoring/patterns";
+import { ALL_CATEGORIES, type PatternCategory, type ContextualPattern } from "@/lib/scoring/patterns";
 import { analyseAllStatistical } from "@/lib/scoring/statistical";
 import { countWords, extractContext } from "@/lib/utils";
 
@@ -90,6 +90,61 @@ function matchRegex(text: string, patterns: Array<string | RegExp>): PatternMatc
   return matches;
 }
 
+// ── Context-aware matching ────────────────────────────────────────────────
+// For buzzwords with legitimate non-corporate uses, check the surrounding
+// sentence for exclude contexts before counting the match.
+function getSurroundingSentence(text: string, position: number): string {
+  // Walk backward to find sentence start
+  let start = position;
+  while (start > 0 && !/[.!?]/.test(text[start - 1])) start--;
+  // Walk forward to find sentence end
+  let end = position;
+  while (end < text.length && !/[.!?]/.test(text[end])) end++;
+  return text.slice(start, end + 1);
+}
+
+function matchContextualPatterns(
+  text: string,
+  contextualPatterns: ContextualPattern[]
+): PatternMatch[] {
+  const lower = text.toLowerCase();
+  const matches: PatternMatch[] = [];
+
+  for (const cp of contextualPatterns) {
+    const phrase = cp.term.toLowerCase();
+    let searchFrom = 0;
+
+    while (true) {
+      const idx = lower.indexOf(phrase, searchFrom);
+      if (idx === -1) break;
+
+      // Word boundary check
+      const before = idx === 0 ? " " : lower[idx - 1];
+      const after = idx + phrase.length >= lower.length ? " " : lower[idx + phrase.length];
+      if (/\w/.test(before) || /\w/.test(after)) {
+        searchFrom = idx + 1;
+        continue;
+      }
+
+      // Check exclude contexts — if any match, skip this occurrence
+      const sentence = getSurroundingSentence(text, idx);
+      const excluded = cp.excludeContexts.some((re) => re.test(sentence));
+
+      if (!excluded) {
+        matches.push({
+          pattern: cp.term,
+          text: text.slice(idx, idx + phrase.length),
+          position: idx,
+        });
+      }
+
+      searchFrom = idx + phrase.length;
+    }
+  }
+
+  return matches;
+}
+
 // ── Category analyser ──────────────────────────────────────────────────────
 function analyseCategory(
   text: string,
@@ -102,6 +157,13 @@ function analyseCategory(
     rawMatches = matchRegex(text, category.patterns);
   } else {
     rawMatches = matchPhrases(text, category.patterns, category.matchMode);
+  }
+
+  // Context-aware filtering: suppress matches where surrounding sentence
+  // matches an exclude context (e.g., "leverage" near "crowbar")
+  if (category.contextualPatterns && category.contextualPatterns.length > 0) {
+    const contextualMatches = matchContextualPatterns(text, category.contextualPatterns);
+    rawMatches = [...rawMatches, ...contextualMatches];
   }
 
   // De-duplicate overlapping matches (keep the longer one)
@@ -131,6 +193,15 @@ function analyseCategory(
   };
 }
 
+// ── Statistical verdict lines ─────────────────────────────────────────────
+const STAT_VERDICTS: Record<string, string> = {
+  "Sentence Rhythm": "The sentence lengths barely vary — that metronome rhythm is a giveaway.",
+  "Vocabulary Richness": "The same words keep cycling through. More variety would help.",
+  "Paragraph Burstiness": "Every paragraph is roughly the same length — break up the rhythm.",
+  "Paragraph Openings": "Too many paragraphs start the same way.",
+  "Punctuation Diversity": "Almost no semicolons, dashes, or parentheticals — the punctuation is flat.",
+};
+
 // ── Verdict copy generation ────────────────────────────────────────────────
 function generateVerdict(score: number, categories: CategoryResult[]): string {
   const topCategories = categories
@@ -139,6 +210,12 @@ function generateVerdict(score: number, categories: CategoryResult[]): string {
 
   const topName = topCategories[0]?.category ?? null;
   const secondName = topCategories[1]?.category ?? null;
+
+  // Find the highest-density statistical category for a supplementary line
+  const topStat = categories
+    .filter((c) => c.detail && c.density > 0.3)
+    .sort((a, b) => b.density - a.density)[0] ?? null;
+  const statLine = topStat ? STAT_VERDICTS[topStat.category] ?? null : null;
 
   if (score <= 10) {
     return "Reads like a person wrote it. Clean structure, original phrasing, no obvious tells.";
@@ -156,7 +233,7 @@ function generateVerdict(score: number, categories: CategoryResult[]): string {
     if (topName) {
       return `Moderate ${topName.toLowerCase()} dragging down the score. The content has merit; the delivery is formulaic.`;
     }
-    return "Some AI patterning present. The writing is functional but follows predictable templates.";
+    return "Some AI patterning present. The writing is functional but follows predictable templates." + (statLine ? ` ${statLine}` : "");
   }
   if (score <= 60) {
     if (topName && secondName) {
@@ -165,7 +242,7 @@ function generateVerdict(score: number, categories: CategoryResult[]): string {
     if (topName) {
       return `The ${topName.toLowerCase()} here is significant. You can feel the formula underneath every paragraph.`;
     }
-    return "The pattern density is high. Several categories are firing — this prose has the texture of generated text.";
+    return "The pattern density is high. Several categories are firing — this prose has the texture of generated text." + (statLine ? ` ${statLine}` : "");
   }
   if (score <= 75) {
     if (topName) {

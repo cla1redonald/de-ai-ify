@@ -3,19 +3,24 @@
 // All five pattern categories defined as typed constants.
 // The engine (engine.ts) imports and iterates them.
 
+export interface ContextualPattern {
+  term: string;
+  excludeContexts: RegExp[]; // if any match the surrounding sentence, suppress
+}
+
 export interface PatternCategory {
   name: string;
   weight: number;
   expected: number; // matches per 100 words representing "normal" prose
   matchMode: "phrase" | "regex" | "word-boundary";
   patterns: Array<string | RegExp>;
+  contextualPatterns?: ContextualPattern[]; // word-boundary patterns with context exclusions
 }
 
-// ── Category 1 — Overused Transitions (weight: 10, expected: 0.8/100 words) ──
-// Detected when they appear as sentence starters or after comma/semicolon.
+// ── Category 1 — Overused Transitions (weight: 8) ──
 export const TRANSITIONS: PatternCategory = {
   name: "Transitional Phrases",
-  weight: 10,
+  weight: 8,
   expected: 0.8,
   matchMode: "phrase",
   patterns: [
@@ -59,11 +64,10 @@ export const TRANSITIONS: PatternCategory = {
   ],
 };
 
-// ── Category 2 — AI Clichés (weight: 18, expected: 0.3/100 words) ──
-// Partial phrase matches anywhere within a sentence.
+// ── Category 2 — AI Clichés (weight: 16) ──
 export const CLICHES: PatternCategory = {
   name: "AI Clichés",
-  weight: 18,
+  weight: 16,
   expected: 0.3,
   matchMode: "phrase",
   patterns: [
@@ -144,10 +148,10 @@ export const CLICHES: PatternCategory = {
   ],
 };
 
-// ── Category 3 — Hedging Language (weight: 10, expected: 0.6/100 words) ──
+// ── Category 3 — Hedging Language (weight: 8) ──
 export const HEDGING: PatternCategory = {
   name: "Hedging Language",
-  weight: 10,
+  weight: 8,
   expected: 0.6,
   matchMode: "phrase",
   patterns: [
@@ -202,10 +206,10 @@ export const HEDGING: PatternCategory = {
   ],
 };
 
-// ── Category 4 — Corporate Buzzwords (weight: 14, expected: 0.5/100 words) ──
+// ── Category 4 — Corporate Buzzwords (weight: 12) ──
 export const BUZZWORDS: PatternCategory = {
   name: "Corporate Buzzwords",
-  weight: 14,
+  weight: 12,
   expected: 0.5,
   matchMode: "word-boundary",
   patterns: [
@@ -214,7 +218,6 @@ export const BUZZWORDS: PatternCategory = {
     "facilitate",
     "optimize",
     "optimise",
-    "leverage",
     "synergize",
     "synergise",
     "synergy",
@@ -227,15 +230,11 @@ export const BUZZWORDS: PatternCategory = {
     "best-in-class",
     "cutting-edge",
     "state-of-the-art",
-    "robust",
     "scalable",
-    "ecosystem",
-    "alignment",
     "stakeholder",
     "value proposition",
     "low-hanging fruit",
     "circle back",
-    "bandwidth",
     "actionable",
     "actionable insights",
     "key takeaways",
@@ -268,13 +267,19 @@ export const BUZZWORDS: PatternCategory = {
     "thought leadership",
     "paradigm",
   ],
+  contextualPatterns: [
+    { term: "leverage", excludeContexts: [/\b(crowbar|lever|fulcrum|pry|mechanical)\b/i] },
+    { term: "ecosystem", excludeContexts: [/\b(forest|marine|coral|wetland|biodiversity|species|habitat|wildlife)\b/i] },
+    { term: "bandwidth", excludeContexts: [/\b(MHz|GHz|Mbps|Gbps|network|frequency|spectrum|signal|wireless)\b/i] },
+    { term: "alignment", excludeContexts: [/\b(CSS|flex|grid|center|left|right|vertical|horizontal|text-align)\b/i] },
+    { term: "robust", excludeContexts: [/\b(statistically|regression|estimator|standard error|algorithm|model)\b/i] },
+  ],
 };
 
-// ── Category 5 — Robotic Structural Patterns (weight: 18, expected: 0.4/100 words) ──
-// Regex-based: detect structural patterns, not just phrases.
+// ── Category 5 — Robotic Structural Patterns (weight: 16) ──
 export const STRUCTURE: PatternCategory = {
   name: "Robotic Structure",
-  weight: 18,
+  weight: 16,
   expected: 0.4,
   matchMode: "regex",
   patterns: [
@@ -313,6 +318,40 @@ export const STRUCTURE: PatternCategory = {
 
     // Emoji-style bullet lists in prose (common in AI LinkedIn/blog)
     /[🔑🚀💡✨🎯📊🌟⭐💪🔥✅❌⚡🎉📈📉🏆]/g,
+
+    // Balanced viewpoint: "While X, it/they also Y"
+    /\bwhile\s+[^,]{10,60},\s+(it|they|this|these|we)\s+(also|still|nevertheless)\b/gi,
+
+    // "On one hand... on the other hand"
+    /\bon\s+(the\s+)?one\s+hand\b/gi,
+
+    // Forced balance: "X, but it also..."
+    /\b\w+(?:\s+\w+){1,8},?\s+but\s+(?:it\s+)?also\s+/gi,
+  ],
+};
+
+// ── Category 6 — Connective Tissue (weight: 8) ──
+// AI overuses demonstrative pronoun + generic verb as connective device.
+export const CONNECTIVE_TISSUE: PatternCategory = {
+  name: "Connective Tissue",
+  weight: 8,
+  expected: 0.5,
+  matchMode: "regex",
+  patterns: [
+    // "This [verb]s..." at sentence boundaries
+    /(?:^|[.!?]\s+)This\s+(means|ensures|allows|enables|creates|highlights|demonstrates|suggests|indicates|reflects|represents|underscores|illustrates|provides|makes|shows|requires|helps|gives|offers|leads|raises|opens|brings|puts|sets)\b/gim,
+
+    // "These [noun]s..." at sentence boundaries
+    /(?:^|[.!?]\s+)These\s+(factors|elements|changes|developments|approaches|strategies|efforts|measures|insights|findings|results|tools|features|improvements|shifts|trends|dynamics|principles|considerations)\b/gim,
+
+    // "By doing so" / "In doing so" / "By doing this"
+    /\b(by doing so|in doing so|by doing this)\b/gi,
+
+    // "This is (why|where|how|what)..." — AI explanation connectors
+    /(?:^|[.!?]\s+)This is (why|where|how|what)\b/gim,
+
+    // "That said" / "That being said" (already in transitions, but the "This/That" cluster matters)
+    /(?:^|[.!?]\s+)(That said|With that said)\b/gim,
   ],
 };
 
@@ -322,4 +361,5 @@ export const ALL_CATEGORIES: PatternCategory[] = [
   HEDGING,
   BUZZWORDS,
   STRUCTURE,
+  CONNECTIVE_TISSUE,
 ];
