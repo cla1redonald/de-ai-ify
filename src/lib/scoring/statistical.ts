@@ -61,7 +61,7 @@ export function analyseSentenceRhythm(text: string): StatisticalResult {
   if (sentences.length < 4) {
     return {
       category: "Sentence Rhythm",
-      weight: 12,
+      weight: 6,
       density: 0,
       severity: "low",
       detail: "Too few sentences to measure rhythm.",
@@ -88,7 +88,7 @@ export function analyseSentenceRhythm(text: string): StatisticalResult {
     detail = `Very uniform sentences (avg ${avgLen} words, std dev only ${sd}). This mechanical rhythm is a strong AI tell.`;
   }
 
-  return { category: "Sentence Rhythm", weight: 8, density, severity: severity(density), detail };
+  return { category: "Sentence Rhythm", weight: 6, density, severity: severity(density), detail };
 }
 
 // ── Category: Vocabulary Richness ────────────────────────────────────────────
@@ -136,7 +136,7 @@ export function analyseVocabularyRichness(text: string): StatisticalResult {
     detail = `Low vocabulary diversity (${pct}% unique). Heavy word reuse is a strong AI signal.`;
   }
 
-  return { category: "Vocabulary Richness", weight: 8, density, severity: severity(density), detail };
+  return { category: "Vocabulary Richness", weight: 6, density, severity: severity(density), detail };
 }
 
 // ── Category: Paragraph Burstiness ───────────────────────────────────────────
@@ -214,7 +214,7 @@ export function analyseParagraphOpenings(text: string): StatisticalResult {
   if (paragraphs.length < 4) {
     return {
       category: "Paragraph Openings",
-      weight: 6,
+      weight: 4,
       density: 0,
       severity: "low",
       detail: "Too few paragraphs to measure opening diversity.",
@@ -251,7 +251,7 @@ export function analyseParagraphOpenings(text: string): StatisticalResult {
     detail = `${dominantPct}% of paragraphs open the same way (${dominant}). This repetitive structure is a strong AI tell.`;
   }
 
-  return { category: "Paragraph Openings", weight: 6, density, severity: severity(density), detail };
+  return { category: "Paragraph Openings", weight: 4, density, severity: severity(density), detail };
 }
 
 // ── Category: Punctuation Diversity ──────────────────────────────────────────
@@ -275,7 +275,7 @@ export function analysePunctuationDiversity(text: string): StatisticalResult {
   if (totalPunctuation < 10) {
     return {
       category: "Punctuation Diversity",
-      weight: 6,
+      weight: 4,
       density: 0,
       severity: "low",
       detail: "Too little punctuation to measure diversity.",
@@ -299,7 +299,7 @@ export function analysePunctuationDiversity(text: string): StatisticalResult {
     detail = `Almost entirely periods and commas. No semicolons, dashes, or parentheticals — flat punctuation is an AI signature.`;
   }
 
-  return { category: "Punctuation Diversity", weight: 6, density, severity: severity(density), detail };
+  return { category: "Punctuation Diversity", weight: 4, density, severity: severity(density), detail };
 }
 
 // ── Run all statistical analyses ─────────────────────────────────────────────

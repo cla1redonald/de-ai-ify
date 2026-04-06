@@ -17,9 +17,9 @@ describe("PatternCategory — shape", () => {
     expect(ALL_CATEGORIES).toHaveLength(6);
   });
 
-  it("all pattern weights sum to 68 (statistical categories add the remaining 32)", () => {
+  it("all pattern weights sum to 76 (statistical categories add the remaining 24)", () => {
     const total = ALL_CATEGORIES.reduce((sum, cat) => sum + cat.weight, 0);
-    expect(total).toBe(68);
+    expect(total).toBe(76);
   });
 
   it("each category has a non-empty name", () => {
@@ -52,10 +52,10 @@ describe("PatternCategory — shape", () => {
 
 describe("Category weights match architecture spec", () => {
   it("TRANSITIONS has weight 8", () => expect(TRANSITIONS.weight).toBe(8));
-  it("CLICHES has weight 16", () => expect(CLICHES.weight).toBe(16));
+  it("CLICHES has weight 20", () => expect(CLICHES.weight).toBe(20));
   it("HEDGING has weight 8", () => expect(HEDGING.weight).toBe(8));
-  it("BUZZWORDS has weight 12", () => expect(BUZZWORDS.weight).toBe(12));
-  it("STRUCTURE has weight 16", () => expect(STRUCTURE.weight).toBe(16));
+  it("BUZZWORDS has weight 14", () => expect(BUZZWORDS.weight).toBe(14));
+  it("STRUCTURE has weight 18", () => expect(STRUCTURE.weight).toBe(18));
   it("CONNECTIVE_TISSUE has weight 8", () => expect(CONNECTIVE_TISSUE.weight).toBe(8));
 });
 

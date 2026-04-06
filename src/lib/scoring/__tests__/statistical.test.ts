@@ -67,9 +67,9 @@ describe("Sentence Rhythm", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 8", () => {
+  it("has weight 6", () => {
     const result = analyseSentenceRhythm(HUMAN_TEXT);
-    expect(result.weight).toBe(8);
+    expect(result.weight).toBe(6);
   });
 });
 
@@ -92,9 +92,9 @@ describe("Vocabulary Richness", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 8", () => {
+  it("has weight 6", () => {
     const result = analyseVocabularyRichness(HUMAN_TEXT);
-    expect(result.weight).toBe(8);
+    expect(result.weight).toBe(6);
   });
 });
 
@@ -144,9 +144,9 @@ describe("Paragraph Openings", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 6", () => {
+  it("has weight 4", () => {
     const result = analyseParagraphOpenings(HUMAN_TEXT);
-    expect(result.weight).toBe(6);
+    expect(result.weight).toBe(4);
   });
 });
 
@@ -186,9 +186,9 @@ describe("Punctuation Diversity", () => {
     expect(result.density).toBe(0);
   });
 
-  it("has weight 6", () => {
+  it("has weight 4", () => {
     const result = analysePunctuationDiversity(HUMAN_TEXT);
-    expect(result.weight).toBe(6);
+    expect(result.weight).toBe(4);
   });
 });
 
@@ -215,9 +215,9 @@ describe("analyseAllStatistical", () => {
     }
   });
 
-  it("weights sum to 32", () => {
+  it("weights sum to 24", () => {
     const results = analyseAllStatistical(HUMAN_TEXT);
     const total = results.reduce((sum, r) => sum + r.weight, 0);
-    expect(total).toBe(32);
+    expect(total).toBe(24);
   });
 });

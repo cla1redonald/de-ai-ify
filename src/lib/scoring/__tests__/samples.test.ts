@@ -121,16 +121,14 @@ const SAMPLES = {
 // ── Obvious ChatGPT output ─────────────────────────────────────────────────────
 
 describe("Sample: obvious ChatGPT output", () => {
-  it("scores above 60 (high slop range)", () => {
+  it("scores above 65 (slop tier)", () => {
     const result = calculateScore(SAMPLES.obviousChatGPT);
-    expect(result.score).toBeGreaterThan(60);
+    expect(result.score).toBeGreaterThan(65);
   });
 
-  it("returns grade 'slop' or high 'mixed'", () => {
+  it("returns grade 'slop'", () => {
     const result = calculateScore(SAMPLES.obviousChatGPT);
-    expect(["slop", "mixed"]).toContain(result.grade);
-    // Should be in the upper range regardless
-    expect(result.score).toBeGreaterThan(60);
+    expect(result.grade).toBe("slop");
   });
 
   it("detects matches in the AI Clichés category", () => {

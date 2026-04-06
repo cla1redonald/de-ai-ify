@@ -64,10 +64,10 @@ export const TRANSITIONS: PatternCategory = {
   ],
 };
 
-// ── Category 2 — AI Clichés (weight: 16) ──
+// ── Category 2 — AI Clichés (weight: 20) ──
 export const CLICHES: PatternCategory = {
   name: "AI Clichés",
-  weight: 16,
+  weight: 20,
   expected: 0.3,
   matchMode: "phrase",
   patterns: [
@@ -145,6 +145,22 @@ export const CLICHES: PatternCategory = {
     "the million-dollar question",
     "make informed decisions",
     "informed decision",
+    // LinkedIn AI patterns
+    "thrilled to announce",
+    "excited to share",
+    "incredible journey",
+    "amazing network",
+    "like-minded professionals",
+    "personal and professional growth",
+    "step out of your comfort zone",
+    "lead with empathy",
+    "make an impact",
+    "drop it in the comments",
+    "let's connect",
+    "grateful for the",
+    "made this possible",
+    "what a journey",
+    "proud to share",
   ],
 };
 
@@ -206,10 +222,10 @@ export const HEDGING: PatternCategory = {
   ],
 };
 
-// ── Category 4 — Corporate Buzzwords (weight: 12) ──
+// ── Category 4 — Corporate Buzzwords (weight: 14) ──
 export const BUZZWORDS: PatternCategory = {
   name: "Corporate Buzzwords",
-  weight: 12,
+  weight: 14,
   expected: 0.5,
   matchMode: "word-boundary",
   patterns: [
@@ -276,10 +292,10 @@ export const BUZZWORDS: PatternCategory = {
   ],
 };
 
-// ── Category 5 — Robotic Structural Patterns (weight: 16) ──
+// ── Category 5 — Robotic Structural Patterns (weight: 18) ──
 export const STRUCTURE: PatternCategory = {
   name: "Robotic Structure",
-  weight: 16,
+  weight: 18,
   expected: 0.4,
   matchMode: "regex",
   patterns: [
