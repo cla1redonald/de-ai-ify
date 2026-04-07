@@ -14,7 +14,7 @@ Paste a URL or text, get an instant score (0–100), see exactly which patterns 
 
 Scoring is **100% client-side** — pure TypeScript, no API calls, no latency, no cost. The engine analyses text across **11 categories** in two layers:
 
-#### Pattern matching (6 categories, 68% weight)
+#### Pattern matching (6 categories, 76% weight)
 
 | Category | What it catches |
 |---|---|
@@ -27,7 +27,7 @@ Scoring is **100% client-side** — pure TypeScript, no API calls, no latency, n
 
 Buzzwords have **context-aware matching** — "leverage a crowbar" won't score, but "leverage synergies" will. Five high-false-positive terms (leverage, ecosystem, bandwidth, alignment, robust) check the surrounding sentence for legitimate technical/physical usage before counting.
 
-#### Statistical analysis (5 categories, 32% weight)
+#### Statistical analysis (5 categories, 24% weight)
 
 | Category | Signal | How it works |
 |---|---|---|
@@ -49,7 +49,7 @@ Each category score is normalised using a **sigmoid density curve** — matches 
 
 ### Rewrites
 
-Flagged text can be rewritten by Claude. The model removes AI patterns while preserving meaning, register, and length. Rate-limited to 3/day per IP (server-side enforced, client-side localStorage display).
+Flagged text can be rewritten by Claude (Sonnet 4.6). The rewrite is aggressive: it restructures sentences, varies rhythm, cuts filler, and injects genuine human texture. A **word-level diff view** highlights exactly what changed (green = added, red = removed), with a "Clean" tab for side-by-side comparison. Rate-limited to 3/day per IP.
 
 ### URL scraping
 
@@ -107,8 +107,9 @@ Text Input → calculateScore()
 ```
 
 - **Scoring**: client-side TypeScript, zero API cost, ~5ms per analysis
-- **Rewrites**: server-side Claude API call, rate-limited
+- **Rewrites**: server-side Claude Sonnet 4.6 call with word-level diff, rate-limited
 - **Scraping**: server-side Firecrawl with 15s timeout + graceful fallback
+- **Diff engine**: LCS-based word-level diff for rewrite change highlighting
 
 ## Stack
 
