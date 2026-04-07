@@ -3,32 +3,30 @@ import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { countWords, hashIp } from "@/lib/utils";
 
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 
-const SYSTEM_PROMPT = `You are an expert editor who specialises in removing AI writing patterns from text.
+const SYSTEM_PROMPT = `You are a ruthless editor. Your job: take AI-sounding mush and make it sound like a real person wrote it.
 
-Your task: rewrite the provided text to sound like it was written by a confident, direct human being.
+Be aggressive. Don't just swap synonyms — restructure sentences, vary their length, cut filler, and inject genuine human rhythm. The reader should not be able to tell the text was ever AI-generated.
 
-Rules:
-- Remove all AI clichés: "delve into", "navigate the complexities", "in today's rapidly evolving world", "paradigm shift", "harness the power of", "game-changer", "it's not just about X, it's about Y", etc.
-- Remove transitional phrase overuse: "moreover", "furthermore", "additionally", "it is worth noting", "that being said", etc. Use them only where genuinely necessary.
-- Remove corporate buzzwords: "utilize" → "use", "leverage" (as verb) → cut or rephrase, "facilitate" → be specific, "synergize", "streamline", "stakeholders", "actionable insights", etc.
-- Remove hedging padding: "it's important to note that", "it's worth mentioning", "one might argue", "plays a crucial role" → say what it actually does.
-- Remove robotic structural patterns: rhetorical questions answered immediately, "there are three key factors:", formulaic "first... second... third..." paragraphs unless they genuinely aid clarity.
+What to cut or rework:
+- AI clichés: "delve into", "navigate the complexities", "in today's rapidly evolving", "paradigm shift", "harness the power of", "game-changer", "it's not just about X", "at its core", "shaping the future". Kill them.
+- Transition stacking: "moreover", "furthermore", "additionally", "it is worth noting". One transition per paragraph max. Most paragraphs need zero.
+- Corporate buzzwords: "leverage" → say what you mean. "utilize" → "use". "facilitate", "synergize", "streamline", "stakeholders", "actionable insights" → be specific or cut.
+- Hedging padding: "it's important to note that" → just say the thing. "one might argue" → who? Say it or don't. "plays a crucial role" → what does it actually do?
+- Robotic structure: if every paragraph follows the same template, break it. Vary sentence lengths dramatically — mix 5-word punches with longer flowing ones. Use dashes, semicolons, parentheticals.
+- Connective tissue: "This means...", "This ensures...", "This allows..." — AI's favourite glue. Rephrase or cut.
+- Balanced-viewpoint hedging: "while X has benefits, it also has drawbacks" — pick a side or be specific about the tradeoff.
 
 Preserve:
-- The original meaning exactly — do not add or remove substance
-- The register: formal text stays formal, casual text stays casual, technical text stays technical
-- Roughly the same length — do not pad or compress significantly
+- The original meaning — do not add or remove substance
+- The register: formal stays formal, casual stays casual
 - Any specific facts, data, names, or claims
+- The author's actual argument or opinion
 
-Do NOT:
-- Add new AI patterns to replace the ones removed
-- Add a preamble like "Here is the rewritten text:" — return ONLY the rewritten text
-- Change the core argument or perspective
-- Make it sound more formal than the original
+Be shorter if the original is padded. Be punchier. Vary the rhythm. A rewrite that reads like a different AI prompt is a failure.
 
-Return ONLY the rewritten text, nothing else.`;
+Return ONLY the rewritten text. No preamble, no commentary.`;
 
 export async function POST(req: NextRequest): Promise<Response> {
   let body: unknown;
