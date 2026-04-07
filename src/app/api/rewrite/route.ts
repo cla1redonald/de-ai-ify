@@ -26,6 +26,8 @@ Preserve:
 
 Be shorter if the original is padded. Be punchier. Vary the rhythm. A rewrite that reads like a different AI prompt is a failure.
 
+NEVER use em dashes (—) in the rewrite. Use commas, semicolons, colons, or full stops instead. Em dashes are themselves an AI writing tell.
+
 Return ONLY the rewritten text. No preamble, no commentary.`;
 
 export async function POST(req: NextRequest): Promise<Response> {
