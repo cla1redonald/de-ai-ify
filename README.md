@@ -1,10 +1,20 @@
 # de-ai-ify
 
+[![Live Demo](https://img.shields.io/badge/demo-de--ai--ify.vercel.app-black?style=flat-square)](https://de-ai-ify.vercel.app)
+[![Tests](https://img.shields.io/badge/tests-188%20passing-brightgreen?style=flat-square)]()
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+
 **No more mush.**
 
 Score any text for AI writing patterns — overused clichés, hedging language, robotic structure, flat rhythm, repetitive vocabulary. Not an authorship detector. A quality scorer.
 
 Paste a URL or text, get an instant score (0–100), see exactly which patterns fired, and optionally rewrite the flagged sections with Claude.
+
+## Try it
+
+→ **[de-ai-ify.vercel.app](https://de-ai-ify.vercel.app)** — paste any text or URL and get an instant score.
 
 ---
 
@@ -55,6 +65,29 @@ Flagged text can be rewritten by Claude (Sonnet 4.6). The rewrite is aggressive:
 
 Paste a URL instead of text. Firecrawl fetches the article content, strips markdown, and feeds it to the scoring engine.
 
+### API
+
+Score text programmatically:
+
+```bash
+curl -X POST https://de-ai-ify.vercel.app/api/score \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Moreover, it is important to note that leveraging synergies..."}'
+```
+
+Returns:
+```json
+{
+  "score": 82,
+  "grade": "slop",
+  "verdictCopy": "Almost every marker is firing...",
+  "patterns": [...],
+  "wordCount": 45
+}
+```
+
+You can also pass `{"url": "https://..."}` to score a web page directly.
+
 ---
 
 ## Getting started
@@ -101,7 +134,7 @@ Text Input → calculateScore()
   ├─ Pattern Analysis (6 categories, phrase/regex/word-boundary matching)
   │  └─ Context-aware filtering (exclude legitimate technical usage)
   ├─ Statistical Analysis (5 categories, CV/entropy/TTR)
-  ├��� Sigmoid density normalisation per category
+  ├─ Sigmoid density normalisation per category
   ├─ Weighted sum → score 0–100
   └─ Verdict copy generation (references top pattern + statistical findings)
 ```
@@ -114,6 +147,25 @@ Text Input → calculateScore()
 ## Stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Vitest · Anthropic SDK · Firecrawl
+
+## Contributing
+
+PRs welcome. The scoring engine is in `src/lib/scoring/` — patterns are easy to add.
+
+```bash
+git clone https://github.com/cla1redonald/de-ai-ify.git
+cd de-ai-ify
+npm install
+npm test          # run all 188+ tests
+npm run dev       # start dev server
+```
+
+### Adding patterns
+
+1. Add your pattern to the appropriate category in `src/lib/scoring/patterns.ts`
+2. Add a detection test in `src/lib/scoring/__tests__/patterns.test.ts`
+3. Run `npm test` to verify no regressions
+4. If the pattern has legitimate non-AI uses, add it as a `contextualPattern` with `excludeContexts`
 
 ## License
 
