@@ -161,6 +161,21 @@ export const CLICHES: PatternCategory = {
     "made this possible",
     "what a journey",
     "proud to share",
+    // Word Humanizer inspired — AI clichés
+    "represents a paradigm shift",
+    "underscoring its importance",
+    "underscoring the need for",
+    "highlighting the need for",
+    "highlighting the importance of",
+    "demonstrating the power of",
+    "a beacon of",
+    "a cornerstone of",
+    "the fabric of",
+    "a catalyst for",
+    "a pivotal moment",
+    "reshaping the",
+    "bridging the gap",
+    "amplifying the",
   ],
 };
 
@@ -219,6 +234,13 @@ export const HEDGING: PatternCategory = {
     "challenges and opportunities",
     "pros and cons",
     "benefits and drawbacks",
+    // Word Humanizer inspired — hedging via authority
+    "experts say",
+    "experts agree",
+    "studies show",
+    "research suggests",
+    "research shows",
+    "according to experts",
   ],
 };
 
@@ -289,6 +311,11 @@ export const BUZZWORDS: PatternCategory = {
     { term: "bandwidth", excludeContexts: [/\b(MHz|GHz|Mbps|Gbps|network|frequency|spectrum|signal|wireless)\b/i] },
     { term: "alignment", excludeContexts: [/\b(CSS|flex|grid|center|left|right|vertical|horizontal|text-align)\b/i] },
     { term: "robust", excludeContexts: [/\b(statistically|regression|estimator|standard error|algorithm|model)\b/i] },
+    // Word Humanizer inspired — contextual buzzwords
+    { term: "pivotal", excludeContexts: [/\b(pivot point|basketball|baseball|joint|hinge|axis)\b/i] },
+    { term: "foster", excludeContexts: [/\b(foster care|foster parent|foster child|foster home|Mr\.|Mrs\.|Dr\.)\b/i] },
+    { term: "vibrant", excludeContexts: [/\b(color|colour|paint|pigment|dye|hue|saturat|neon|bright)\b/i] },
+    { term: "tapestry", excludeContexts: [/\b(weave|loom|thread|fabric|textile|wool|silk|needle|stitch)\b/i] },
   ],
 };
 
@@ -343,6 +370,9 @@ export const STRUCTURE: PatternCategory = {
 
     // Forced balance: "X, but it also..."
     /\b\w+(?:\s+\w+){1,8},?\s+but\s+(?:it\s+)?also\s+/gi,
+
+    // Copula avoidance: AI uses "serves as / stands as / boasts" instead of "is/are/has"
+    /\b(serves as|stands as|boasts)\s+(a|an|the|one of)\b/gi,
   ],
 };
 

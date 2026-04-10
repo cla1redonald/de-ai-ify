@@ -417,3 +417,53 @@ describe("PatternMatch — position tracking", () => {
     }
   });
 });
+
+// ── New patterns — Word Humanizer inspired ──────────────────────────────────
+
+describe("New patterns — Word Humanizer inspired", () => {
+  // Test cliche additions
+  const newCliches = [
+    "underscoring its importance",
+    "highlighting the need for",
+    "a beacon of",
+    "a cornerstone of",
+    "a catalyst for",
+    "bridging the gap",
+  ];
+  for (const phrase of newCliches) {
+    it(`detects "${phrase}" as an AI cliche`, () => {
+      const text = withPhrase(phrase);
+      const result = calculateScore(text);
+      const cliches = result.categories.find(c => c.category === CLICHES.name);
+      expect(cliches!.matches.length).toBeGreaterThan(0);
+    });
+  }
+
+  // Test hedging additions
+  const newHedging = ["experts say", "research suggests", "studies show"];
+  for (const phrase of newHedging) {
+    it(`detects "${phrase}" as hedging language`, () => {
+      const text = withPhrase(phrase);
+      const result = calculateScore(text);
+      const hedging = result.categories.find(c => c.category === HEDGING.name);
+      expect(hedging!.matches.length).toBeGreaterThan(0);
+    });
+  }
+
+  // Test contextual buzzword: pivotal
+  it("detects 'pivotal' as a buzzword in corporate context", () => {
+    const text = withPhrase("This was a pivotal decision for the organization.");
+    const result = calculateScore(text);
+    const buzzwords = result.categories.find(c => c.category === BUZZWORDS.name);
+    expect(buzzwords!.matches.length).toBeGreaterThan(0);
+  });
+
+  it("does NOT flag 'pivotal' in sports context", () => {
+    const text = withPhrase("The basketball player made a pivotal pivot point move.");
+    const result = calculateScore(text);
+    const buzzwords = result.categories.find(c => c.category === BUZZWORDS.name);
+    // Should not match "pivotal" due to sports context exclusion
+    const pivotalMatches = buzzwords!.matches.filter(m => m.pattern === "pivotal");
+    expect(pivotalMatches.length).toBe(0);
+  });
+});
