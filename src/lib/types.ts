@@ -84,3 +84,7 @@ export interface RewriteError    {
   remaining?: number;
   resetsAt?: string;
 }
+
+export interface ScoreRequest  { text?: string; url?: string }
+export interface ScoreResponse extends ScoreResult {}
+export interface ScoreError    { error: "INVALID_INPUT" | "SCRAPE_FAILED" | "SCORE_FAILED"; message: string }
